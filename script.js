@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const socket = io();
+
     // Check if username is stored in local storage
     let username = localStorage.getItem('username');
     if (!username) {
@@ -12,24 +14,30 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('username', username);
     }
 
-    // Display existing messages from local storage
-    const messages = JSON.parse(localStorage.getItem('messages')) || [];
-    messages.forEach(displayMessage);
+    // Display existing messages
+    socket.on('init', (initMessages) => {
+        initMessages.forEach((msg) => displayMessage(msg));
+    });
 
-    // Function to send message
-    window.sendMessage = function() {
+    // Send message
+    document.getElementById('message-form').addEventListener('submit', (event) => {
+        event.preventDefault();
         const messageInput = document.getElementById('message-input');
         const message = messageInput.value.trim();
         if (message !== '') {
             const data = { username, message };
-            messages.push(data);
-            localStorage.setItem('messages', JSON.stringify(messages)); // Save messages to local storage
+            socket.emit('message', data);
             displayMessage(data);
             messageInput.value = '';
         }
-    };
+    });
 
-    // Function to display message in chat window
+    // Receive message
+    socket.on('message', (data) => {
+        displayMessage(data);
+    });
+
+    // Display message in chat window
     function displayMessage(data) {
         const { username, message } = data;
         const chatMessages = document.getElementById('chat-messages');
